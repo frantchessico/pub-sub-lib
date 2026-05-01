@@ -1,7 +1,7 @@
 import type { FirebaseApp, FirebaseOptions } from 'firebase/app';
 import type { Firestore } from 'firebase/firestore';
 
-export type RealtimeScope = 'user' | 'vendor' | 'driver' | 'admin' | 'chat' | 'tracking';
+export type RealtimeScope = string;
 
 export type RealtimeAction =
   | 'created'
@@ -14,7 +14,7 @@ export type RealtimeAction =
   | 'left'
   | 'resync_required';
 
-export type RealtimeProvider = 'socket.io' | 'firestore-fallback';
+export type RealtimeProvider = 'postgres' | 'mongo' | 'redis' | 'firestore' | 'socket.io' | 'firestore-fallback';
 
 export type RealtimeApp = 'client' | 'vendor' | 'driver' | 'admin' | 'backend';
 

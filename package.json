@@ -1,6 +1,6 @@
 {
   "name": "@savanapoint/zero-pub-sub",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },
@@ -18,6 +18,46 @@
     "./admin": {
       "types": "./dist/admin.d.ts",
       "default": "./dist/admin.js"
+    },
+    "./client-sdk": {
+      "types": "./dist/client-sdk.d.ts",
+      "default": "./dist/client-sdk.js"
+    },
+    "./factory": {
+      "types": "./dist/factory.d.ts",
+      "default": "./dist/factory.js"
+    },
+    "./gateway": {
+      "types": "./dist/ws/gateway.d.ts",
+      "default": "./dist/ws/gateway.js"
+    },
+    "./core": {
+      "types": "./dist/core/types.d.ts",
+      "default": "./dist/core/types.js"
+    },
+    "./transports": {
+      "types": "./dist/transport/RealtimeTransport.d.ts",
+      "default": "./dist/transport/RealtimeTransport.js"
+    },
+    "./transports/postgres": {
+      "types": "./dist/transports/postgres.d.ts",
+      "default": "./dist/transports/postgres.js"
+    },
+    "./transports/mongo": {
+      "types": "./dist/transports/mongo.d.ts",
+      "default": "./dist/transports/mongo.js"
+    },
+    "./transports/redis": {
+      "types": "./dist/transports/redis.d.ts",
+      "default": "./dist/transports/redis.js"
+    },
+    "./transports/firestore": {
+      "types": "./dist/transports/firestore.d.ts",
+      "default": "./dist/transports/firestore.js"
+    },
+    "./transports/hybrid": {
+      "types": "./dist/transports/hybrid.d.ts",
+      "default": "./dist/transports/hybrid.js"
     }
   },
   "scripts": {
@@ -38,7 +78,7 @@
   ],
   "author": "Francisco Inoque",
   "license": "MIT",
-  "description": "Internal Zero Pub/Sub realtime fallback using Firebase",
+  "description": "Realtime Engine: multi-provider event streaming with WebSocket gateway, replay, ack and ordering",
   "devDependencies": {
     "firebase": "^12.12.1",
     "@types/node": "^22.0.0",
@@ -46,11 +86,15 @@
     "typescript": "^5.5.4"
   },
   "peerDependencies": {
-    "firebase": "^10.12.4 || ^11.0.0 || ^12.0.0"
+    "firebase": "^10.12.4 || ^11.0.0 || ^12.0.0",
+    "ws": "^8.0.0"
   },
   "peerDependenciesMeta": {
     "firebase": {
       "optional": false
+    },
+    "ws": {
+      "optional": true
     }
   }
 }

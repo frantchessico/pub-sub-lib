@@ -3,6 +3,7 @@ import type { RealtimeScope } from './transport/types';
 
 const ROOM_SEPARATOR = ':';
 const ENCODED_SEPARATOR = '__';
+const SCOPE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
 export const room = {
   user(userId: string): string {
@@ -31,24 +32,20 @@ export const room = {
 };
 
 export interface ParsedRoom {
-  scope: RealtimeScope;
-  resourceId?: string;
+  scope: string;
+  resourceId: string;
 }
 
 export function parseRoom(value: string): ParsedRoom {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new InvalidRoomError(String(value));
+  }
+
   const [scope, ...resourceParts] = value.split(ROOM_SEPARATOR);
   const resourceId = resourceParts.join(ROOM_SEPARATOR);
 
   if (!isRealtimeScope(scope)) {
     throw new InvalidRoomError(value);
-  }
-
-  if (scope === 'admin') {
-    if (resourceId !== 'realtime') {
-      throw new InvalidRoomError(value);
-    }
-
-    return { scope };
   }
 
   if (!resourceId) {
@@ -64,23 +61,21 @@ export function encodeRoom(value: string): string {
 }
 
 export function decodeRoom(value: string): string {
-  return decodeURIComponent(value.replace(new RegExp(ENCODED_SEPARATOR, 'g'), '%3A'));
+  const decoded = decodeURIComponent(value.replace(new RegExp(ENCODED_SEPARATOR, 'g'), '%3A'));
+  parseRoom(decoded);
+  return decoded;
 }
 
 export function isRealtimeScope(value: string): value is RealtimeScope {
-  return value === 'user' ||
-    value === 'vendor' ||
-    value === 'driver' ||
-    value === 'admin' ||
-    value === 'chat' ||
-    value === 'tracking';
+  return typeof value === 'string' && SCOPE_PATTERN.test(value);
 }
 
-function buildRoom(scope: Exclude<RealtimeScope, 'admin'>, resourceId: string): string {
+export function buildRoom(scope: string, resourceId: string): string {
+  const cleanScope = scope.trim();
   const cleanResourceId = resourceId.trim();
-  if (!cleanResourceId) {
-    throw new InvalidRoomError(`${scope}:`);
+  if (!isRealtimeScope(cleanScope) || !cleanResourceId || cleanResourceId.includes('\n')) {
+    throw new InvalidRoomError(`${scope}${ROOM_SEPARATOR}${resourceId}`);
   }
 
-  return `${scope}${ROOM_SEPARATOR}${cleanResourceId}`;
+  return `${cleanScope}${ROOM_SEPARATOR}${cleanResourceId}`;
 }
