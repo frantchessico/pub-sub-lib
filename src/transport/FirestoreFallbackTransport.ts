@@ -484,25 +484,17 @@ export class FirestoreFallbackTransport {
     ack: boolean,
   ): Promise<void> {
     const subscriberRef = this.paths.subscriberDoc(room, subscriberId);
-    await runTransaction(this.firestore, async (transaction) => {
-      const snap = await transaction.get(subscriberRef);
-      const currentAck = snap.exists() ? Number(snap.data().lastAckSequence ?? 0) : 0;
-      const currentSeen = snap.exists() ? Number(snap.data().lastSeenSequence ?? 0) : 0;
-      transaction.set(
-        subscriberRef,
-        stripUndefinedDeep({
-          subscriberId,
-          room,
-          lastSeenSequence: Math.max(currentSeen, sequence),
-          lastAckSequence: ack ? Math.max(currentAck, sequence) : currentAck,
-          lastSeenAt: serverTimestamp(),
-          status: 'active',
-          app: this.appName,
-          joinedAt: snap.exists() ? snap.data().joinedAt : serverTimestamp(),
-        }),
-        { merge: true },
-      );
+    const cursorUpdate = stripUndefinedDeep({
+      subscriberId,
+      room,
+      lastSeenSequence: sequence,
+      lastAckSequence: ack ? sequence : undefined,
+      lastSeenAt: serverTimestamp(),
+      status: 'active',
+      app: this.appName,
     });
+
+    await setDoc(subscriberRef, cursorUpdate, { merge: true });
   }
 
   private recordReceivedEvent(event: RealtimeEnvelope): void {
