@@ -49,6 +49,7 @@ export class FirestoreFallbackTransport {
   private readonly processedSubscriptionEvents = new Set<string>();
   private readonly activeSubscriptions = new Map<string, Unsubscribe>();
   private readonly subscriptionRooms = new Map<string, string>();
+  private readonly cursorUpdateChains = new Map<string, Promise<void>>();
   private readonly statusListeners = new Set<(status: FallbackStatus) => void>();
   private statusState: FallbackStatus;
 
@@ -454,6 +455,29 @@ export class FirestoreFallbackTransport {
   }
 
   private async updateSubscriberCursor(
+    room: string,
+    subscriberId: string,
+    sequence: number,
+    ack: boolean,
+  ): Promise<void> {
+    const updateKey = `${room}:${subscriberId}`;
+    const previousUpdate = this.cursorUpdateChains.get(updateKey) ?? Promise.resolve();
+    const nextUpdate = previousUpdate
+      .catch(() => undefined)
+      .then(() => this.writeSubscriberCursor(room, subscriberId, sequence, ack));
+
+    this.cursorUpdateChains.set(updateKey, nextUpdate);
+
+    try {
+      await nextUpdate;
+    } finally {
+      if (this.cursorUpdateChains.get(updateKey) === nextUpdate) {
+        this.cursorUpdateChains.delete(updateKey);
+      }
+    }
+  }
+
+  private async writeSubscriberCursor(
     room: string,
     subscriberId: string,
     sequence: number,
