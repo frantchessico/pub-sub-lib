@@ -5,31 +5,9 @@ const ROOM_SEPARATOR = ':';
 const ENCODED_SEPARATOR = '__';
 const SCOPE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
-export const room = {
-  user(userId: string): string {
-    return buildRoom('user', userId);
-  },
-
-  vendor(vendorId: string): string {
-    return buildRoom('vendor', vendorId);
-  },
-
-  driver(driverUserId: string): string {
-    return buildRoom('driver', driverUserId);
-  },
-
-  admin(): 'admin:realtime' {
-    return 'admin:realtime';
-  },
-
-  chat(conversationId: string): string {
-    return buildRoom('chat', conversationId);
-  },
-
-  tracking(topic: string): string {
-    return buildRoom('tracking', topic);
-  },
-};
+export function room(scope: string, resourceId: string): string {
+  return buildRoom(scope, resourceId);
+}
 
 export interface ParsedRoom {
   scope: string;

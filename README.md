@@ -129,14 +129,11 @@ if (replay.resyncRequired) {
 ### Rooms
 
 ```ts
-import { room } from '@savanapoint/zero-pub-sub';
+import { buildRoom, room } from '@savanapoint/zero-pub-sub';
 
-room.user('user_123');          // user:user_123
-room.vendor('vendor_123');      // vendor:vendor_123
-room.driver('driver_123');      // driver:driver_123
-room.admin();                   // admin:realtime
-room.chat('conversation_123');  // chat:conversation_123
-room.tracking('delivery_123');  // tracking:delivery_123
+room('chat', 'conversation_123');      // chat:conversation_123
+room('order', 'order_123');            // order:order_123
+buildRoom('payment', 'payment_123');   // payment:payment_123
 ```
 
 ## Firestore Schema
