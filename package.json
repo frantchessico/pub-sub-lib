@@ -1,8 +1,25 @@
 {
-  "name": "@savanapoint/pub-sub",
-  "version": "0.1.2",
+  "name": "@savanapoint/zero-pub-sub",
+  "version": "0.1.3",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./admin": {
+      "types": "./dist/admin.d.ts",
+      "default": "./dist/admin.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"
@@ -12,7 +29,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/frantchessico/pub-sub-lib.git"
+    "url": "internal:zero/pub-sub-lib"
   },
   "keywords": [
     "pubsub",
@@ -21,15 +38,19 @@
   ],
   "author": "Francisco Inoque",
   "license": "MIT",
-  "description": "A Pub/Sub library using Firebase Firestore",
+  "description": "Internal Zero Pub/Sub realtime fallback using Firebase",
   "devDependencies": {
+    "firebase": "^12.12.1",
     "@types/node": "^22.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   },
-  "dependencies": {
-    "dotenv": "^16.4.5",
-    "firebase": "^10.12.4",
-    "sucrase": "^3.35.0"
+  "peerDependencies": {
+    "firebase": "^10.12.4 || ^11.0.0 || ^12.0.0"
+  },
+  "peerDependenciesMeta": {
+    "firebase": {
+      "optional": false
+    }
   }
 }

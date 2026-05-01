@@ -1,88 +1,182 @@
+# @savanapoint/zero-pub-sub
 
-# @savanapoint/pub-sub
+Firestore-backed realtime fallback transport for the Zero ecosystem.
 
-The `@savanapoint/pub-sub` library facilitates implementing a pub/sub messaging system using Firebase Firestore and TypeScript. It enables publishing messages to channels and subscribing to receive messages from those channels.
+This package is designed to complement a primary WebSocket/Socket.IO realtime channel. It persists short-lived realtime events in Firestore so applications can recover missed events, keep operating when WebSocket is unavailable, and reconcile state without aggressive polling.
 
 ## Installation
 
-To install the library, run the following command:
-
 ```bash
-npm install @savanapoint/pub-sub
+npm install @savanapoint/zero-pub-sub firebase
 ```
+
+`firebase` is a peer dependency. Applications that already initialize Firebase can pass an existing `Firestore` instance to the transport.
+
+## Core Concepts
+
+- Socket.IO remains the primary realtime provider.
+- Firestore fallback uses the same event envelope as the primary realtime layer.
+- Events are routed by rooms such as `user:{id}`, `vendor:{id}`, `chat:{id}` and `tracking:{topic}`.
+- Each subscriber has its own cursor. Events are not marked as globally read.
+- Events include `id`, `sequence`, `updatedAt`, `emittedAt` and `expiresAt` for dedupe, replay and TTL.
 
 ## Usage
 
-### Initialization
+### Create a Transport
 
-First, initialize the `PubSub` class with your Firebase configuration:
+```ts
+import { FirestoreFallbackTransport } from '@savanapoint/zero-pub-sub';
 
-```typescript
-import PubSub from '@savanapoint/pub-sub';
-
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  databaseURL: process.env.FIREBASE_DATABASE_URL,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID,
-};
-
-const pubSub = new PubSub(firebaseConfig);
+const fallback = new FirestoreFallbackTransport({
+  firebaseConfig,
+  subscriberId: 'user_123:device_abc',
+  app: 'client',
+  defaultTtlMs: 24 * 60 * 60 * 1000,
+  maxBacklogEvents: 500,
+});
 ```
 
-### Publish a Message
+With an existing Firestore instance:
 
-To publish a message to a channel, use the `publish` method of the `PubSub` class:
+```ts
+import { getFirestore } from 'firebase/firestore';
+import { FirestoreFallbackTransport } from '@savanapoint/zero-pub-sub';
 
-```typescript
-pubSub.publish('channelName', 'Hello, World!', ['subscriberId1', 'subscriberId2'])
-  .then(() => {
-    console.log('Message published successfully');
-  })
-  .catch((error) => {
-    console.error('Error publishing message:', error);
-  });
+const fallback = new FirestoreFallbackTransport({
+  firestore: getFirestore(app),
+  subscriberId: 'vendor_123:device_abc',
+  app: 'vendor',
+});
 ```
 
-- **`channel`**: The name of the channel where the message will be published.
-- **`message`**: The content of the message to be published.
-- **`subscribers`**: List of subscriber IDs who will receive the message.
+### Publish an Event
 
-### Subscribe to a Channel
+Publishing is intended for trusted backend code.
 
-To subscribe to a channel and receive messages, use the `subscribe` method of the `PubSub` class:
-
-```typescript
-pubSub.subscribe('channelName', ['subscriberId1', 'subscriberId2'], (message) => {
-    console.log('Received message:', message);
-  })
-  .catch((error) => {
-    console.error('Error subscribing to channel:', error);
-  });
+```ts
+await fallback.publish({
+  room: 'user:123',
+  type: 'user:order:update',
+  entityId: 'order_456',
+  action: 'updated',
+  version: 12,
+  updatedAt: new Date(),
+  payload: {
+    orderId: 'order_456',
+    status: 'ready',
+  },
+});
 ```
 
-- **`channel`**: The name of the channel to which the subscribers are subscribing.
-- **`subscriberIds`**: List of subscriber IDs who should receive the messages.
-- **`onMessage`**: Callback function that will be called when a new message is received. It receives the message as an argument.
+### Subscribe to a Room
 
-### Error Handling
+```ts
+const unsubscribe = fallback.subscribe(
+  {
+    room: 'user:123',
+    eventTypes: ['user:order:update', 'user:delivery:update'],
+    from: 'cursor',
+    ackMode: 'after-callback',
+  },
+  async (event) => {
+    ordersStore.apply(event);
+  },
+  (error) => {
+    console.error('Fallback realtime error:', error);
+  },
+);
 
-- **Errors When Publishing Messages:** Any error that occurs during the publishing of the message will be caught and logged to the console.
-- **Errors When Subscribing to Channels:** Any error that occurs during subscription to the channel will be caught and logged to the console.
+await unsubscribe();
+```
 
-## Contributing
+### Manual Ack
 
-If you would like to contribute to the library, please follow these steps:
+```ts
+const unsubscribe = fallback.subscribeWithAck(
+  {
+    room: 'chat:conversation_123',
+    eventTypes: ['chat:message', 'chat:read'],
+    from: 'cursor',
+    ackMode: 'manual',
+  },
+  async (event, ack, nack) => {
+    try {
+      await chatStore.apply(event);
+      await ack();
+    } catch (error) {
+      await nack(error);
+    }
+  },
+);
+```
 
-1. Fork the repository.
-2. Create a branch for your changes.
-3. Make your modifications and test them.
-4. Submit a pull request to the main repository.
+### Replay Missed Events
+
+```ts
+const replay = await fallback.replay({
+  room: 'vendor:123',
+  fromSequence: 42,
+  limit: 100,
+});
+
+if (replay.resyncRequired) {
+  await resyncFromHttp('sequence_gap');
+} else {
+  replay.events.forEach((event) => vendorOpsStore.apply(event));
+}
+```
+
+### Rooms
+
+```ts
+import { room } from '@savanapoint/zero-pub-sub';
+
+room.user('user_123');          // user:user_123
+room.vendor('vendor_123');      // vendor:vendor_123
+room.driver('driver_123');      // driver:driver_123
+room.admin();                   // admin:realtime
+room.chat('conversation_123');  // chat:conversation_123
+room.tracking('delivery_123');  // tracking:delivery_123
+```
+
+## Firestore Schema
+
+```text
+realtimeRooms/{encodedRoom}
+  events/{eventId}
+  subscribers/{subscriberId}
+```
+
+Each room stores `lastSequence`. Each subscriber stores `lastAckSequence` and `lastSeenSequence`.
+
+## Legacy API
+
+The original default export is still available as a compatibility facade:
+
+```ts
+import PubSub from '@savanapoint/zero-pub-sub';
+
+const pubSub = new PubSub(firebaseConfig, 'user_123:device_abc');
+
+const unsubscribe = pubSub.subscribe('newsletter', ['user_123'], (message) => {
+  console.log(message);
+});
+
+await pubSub.publish('newsletter', 'Hello, World!', ['user_123']);
+await unsubscribe();
+```
+
+New integrations should use `FirestoreFallbackTransport` directly.
+
+## Production Notes
+
+- Use the backend as the trusted publisher.
+- Configure Firestore Security Rules so clients can only read authorized rooms.
+- Allow clients to update only their own subscriber cursor documents.
+- Configure Firestore TTL for `events.expiresAt`.
+- Do not use fallback for high-frequency ephemeral events unless necessary.
+- Deduplicate events in the app using `event.id` and `sequence` per room.
 
 ## License
 
-The library is licensed under the [MIT License](LICENSE).
-
+MIT
