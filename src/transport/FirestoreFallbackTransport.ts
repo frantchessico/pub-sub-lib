@@ -434,7 +434,6 @@ export class FirestoreFallbackTransport {
           room,
           lastAckSequence: fromSequence,
           lastSeenSequence: fromSequence,
-          joinedAt: serverTimestamp(),
           lastSeenAt: serverTimestamp(),
           status: 'active',
           app: this.appName,
