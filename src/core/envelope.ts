@@ -35,6 +35,7 @@ export function createRealtimeEnvelope<TPayload>(
     emittedAt,
     expiresAt,
     payload: input.payload,
+    encrypted: input.encrypted,
     metadata: {
       ...input.metadata,
       provider: provider ?? input.metadata?.provider,

@@ -22,3 +22,17 @@ export class InvalidEnvelopeError extends PubSubError {
     this.name = 'InvalidEnvelopeError';
   }
 }
+
+export class InvalidProtocolMessageError extends PubSubError {
+  constructor(message: string, context?: Record<string, unknown>) {
+    super(message, 'invalid_protocol_message', context);
+    this.name = 'InvalidProtocolMessageError';
+  }
+}
+
+export class BackpressureError extends PubSubError {
+  constructor(message: string, context?: Record<string, unknown>) {
+    super(message, 'backpressure', context);
+    this.name = 'BackpressureError';
+  }
+}

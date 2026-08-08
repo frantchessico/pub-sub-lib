@@ -55,7 +55,6 @@ export function createEnvelope<TPayload>(
     payload: event.payload,
     metadata: {
       ...event.metadata,
-      provider: 'firestore-fallback',
     },
   };
 

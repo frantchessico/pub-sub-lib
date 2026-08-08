@@ -9,5 +9,11 @@
     "skipLibCheck": true
   },
   "include": ["src"],
-  "exclude": ["node_modules", "**/*.test.ts"]
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "src/firestore/**/*",
+    "src/metrics.ts",
+    "src/pubsub.ts"
+  ]
 }

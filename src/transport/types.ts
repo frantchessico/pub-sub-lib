@@ -1,6 +1,3 @@
-import type { FirebaseApp, FirebaseOptions } from 'firebase/app';
-import type { Firestore } from 'firebase/firestore';
-
 export type RealtimeScope = string;
 
 export type RealtimeAction =
@@ -14,7 +11,7 @@ export type RealtimeAction =
   | 'left'
   | 'resync_required';
 
-export type RealtimeProvider = 'postgres' | 'mongo' | 'redis' | 'firestore' | 'socket.io' | 'firestore-fallback';
+export type RealtimeProvider = 'postgres' | 'mongo' | 'redis' | 'socket.io';
 
 export type RealtimeApp = 'client' | 'vendor' | 'driver' | 'admin' | 'backend';
 
@@ -89,54 +86,11 @@ export interface ReplayResult<TPayload = unknown> {
   resyncRequired: boolean;
 }
 
-export type FallbackConnectionState =
-  | 'idle'
-  | 'connecting'
-  | 'connected'
-  | 'recovering'
-  | 'degraded'
-  | 'closed'
-  | 'error';
-
-export interface FallbackStatus {
-  provider: 'firestore-fallback';
-  state: FallbackConnectionState;
-  activeRooms: string[];
-  subscriberId: string;
-  lastEventAt?: string;
-  lastError?: string;
-}
-
-export interface RealtimeFallbackMetrics {
-  published: number;
-  received: number;
-  acked: number;
-  droppedDuplicate: number;
-  droppedExpired: number;
-  gapsDetected: number;
-  resyncRequired: number;
-  publishErrors: number;
-  subscribeErrors: number;
-  averageDeliveryLagMs: number;
-}
-
 export interface RealtimeLogger {
   debug?(message: string, context?: Record<string, unknown>): void;
   info?(message: string, context?: Record<string, unknown>): void;
   warn?(message: string, context?: Record<string, unknown>): void;
   error?(message: string, context?: Record<string, unknown>): void;
-}
-
-export interface FirestoreFallbackTransportOptions {
-  firebaseConfig?: FirebaseOptions;
-  firebaseApp?: FirebaseApp;
-  firestore?: Firestore;
-  subscriberId: string;
-  app?: RealtimeApp;
-  defaultTtlMs?: number;
-  maxBacklogEvents?: number;
-  logger?: RealtimeLogger;
-  collectionName?: string;
 }
 
 export interface SubscriptionAck {

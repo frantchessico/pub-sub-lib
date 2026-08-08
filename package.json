@@ -1,11 +1,15 @@
 {
   "name": "@savanapoint/zero-pub-sub",
-  "version": "0.2.0",
+  "version": "0.5.1",
   "publishConfig": {
     "access": "public"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "bin": {
+    "zero-pub-sub": "dist/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,6 +18,10 @@
     "./client": {
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
     },
     "./admin": {
       "types": "./dist/admin.d.ts",
@@ -30,6 +38,10 @@
     "./gateway": {
       "types": "./dist/ws/gateway.d.ts",
       "default": "./dist/ws/gateway.js"
+    },
+    "./cloud": {
+      "types": "./dist/cloud.d.ts",
+      "default": "./dist/cloud.js"
     },
     "./core": {
       "types": "./dist/core/types.d.ts",
@@ -51,10 +63,6 @@
       "types": "./dist/transports/redis.d.ts",
       "default": "./dist/transports/redis.js"
     },
-    "./transports/firestore": {
-      "types": "./dist/transports/firestore.d.ts",
-      "default": "./dist/transports/firestore.js"
-    },
     "./transports/hybrid": {
       "types": "./dist/transports/hybrid.d.ts",
       "default": "./dist/transports/hybrid.js"
@@ -62,10 +70,19 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "test": "npm run build && node --test tests/*.test.js",
+    "pack:check": "npm pack --dry-run",
+    "load:test": "npm run build && node tests/load-test.js",
+    "prepublishOnly": "npm run build",
+    "prepare": "npm run build"
   },
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "migrations/**/*",
+    "README.md",
+    "REALTIME_ENGINE.md",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "repository": {
     "type": "git",
@@ -73,26 +90,34 @@
   },
   "keywords": [
     "pubsub",
-    "firebase",
-    "firestore"
+    "websocket",
+    "realtime"
   ],
   "author": "Francisco Inoque",
   "license": "MIT",
   "description": "Realtime Engine: multi-provider event streaming with WebSocket gateway, replay, ack and ordering",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "mongodb": "^6.0.0",
+    "pg": "^8.0.0",
+    "redis": "^5.0.0"
+  },
+  "bundledDependencies": [
+    "mongodb",
+    "pg",
+    "redis"
+  ],
   "devDependencies": {
-    "firebase": "^12.12.1",
     "@types/node": "^22.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   },
   "peerDependencies": {
-    "firebase": "^10.12.4 || ^11.0.0 || ^12.0.0",
     "ws": "^8.0.0"
   },
   "peerDependenciesMeta": {
-    "firebase": {
-      "optional": false
-    },
     "ws": {
       "optional": true
     }

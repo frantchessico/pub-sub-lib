@@ -30,6 +30,12 @@ export async function verifyInitToken(token: string | undefined, config?: AuthCo
 export async function assertRoomAccess(context: RoomAccessContext, config?: AuthConfig): Promise<void> {
   const parsed = parseRoom(context.room);
 
+  // Se a instância exige autenticação, uma ligação sem claims verificadas nunca
+  // acede a uma room — mesmo que `authorize` não esteja definido.
+  if (config?.jwt && !context.claims) {
+    throw new Error(`Access denied for room: ${context.room}`);
+  }
+
   if (config?.scopes?.length && !config.scopes.includes(parsed.scope)) {
     throw new Error(`Room scope is not allowed: ${parsed.scope}`);
   }
